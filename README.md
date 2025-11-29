@@ -1,319 +1,334 @@
-# API de Gestão de Clínicas Médicas
+# Clínica Protheus
 
-API completa para gestão de clínicas médicas desenvolvida em Python com Flask, seguindo o padrão MVC, utilizando autenticação JWT e banco SQLite. O frontend foi construído com React e Tailwind CSS, apresentando um design moderno com **Dark Mode** nativo e exclusivo.
+Sistema completo de gerenciamento para clínicas médicas com backend Flask (Python) e frontend React (Vite).
 
-## 🚀 Tecnologias
+## 📋 Índice
 
-- **Python 3.11**
-- **Flask** - Framework web
-- **SQLAlchemy** - ORM
-- **Flask-Migrate** - Migrations de banco
-- **Flask-JWT-Extended** - Autenticação JWT
-- **SQLite** - Banco de dados
-- **bcrypt** - Hash de senhas
-
-### Frontend
-- **React** - Biblioteca JS para interfaces
-- **Tailwind CSS** - Framework de estilização
-- **Vite** - Build tool
-- **Lucide React** - Ícones
-- **Axios** - Requisições HTTP
-- **React Router Dom** - Roteamento
-- **React Hook Form** - Gerenciamento de formulários
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Início Rápido](#início-rápido)
+- [Backend](#backend-flaskpython)
+- [Frontend](#frontend-reactvite)
+- [Arquitetura](#arquitetura)
+- [API Endpoints](#api-endpoints)
+- [Funcionalidades](#funcionalidades)
+- [Tecnologias](#tecnologias)
 
 ## 📁 Estrutura do Projeto
 
 ```
-├── app/
-│   ├── __init__.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── user.py
-│   │   ├── patient.py
-│   │   ├── procedure.py
-│   │   └── appointment.py
-│   ├── services/
-│   │   ├── user_service.py
-│   │   ├── patient_service.py
-│   │   ├── procedure_service.py
-│   │   └── appointment_service.py
-│   ├── routes/
-│   │   ├── auth.py
-│   │   ├── users.py
-│   │   ├── patients.py
-│   │   ├── procedures.py
-│   │   └── appointments.py
-│   └── utils/
-│       ├── auth.py
-│       ├── validators.py
-│       └── pagination.py
-├── config.py
-├── run.py
-├── requirements.txt
-├── create_admin.py
-├── clinic.db (criado automaticamente)
-├── .env.example
-└── frontend/
+Clinica-Protheus/
+├── backend/                    # 🔵 API Flask (Python)
+│   ├── app/
+│   │   ├── models/            # Modelos de dados (SQLAlchemy)
+│   │   ├── schemas/           # Schemas de validação (Marshmallow)
+│   │   ├── controllers/       # Controllers (rotas HTTP)
+│   │   ├── services/          # Lógica de negócio
+│   │   └── utils/             # Utilitários (auth, pagination, validators)
+│   ├── migrations/            # Migrações do banco de dados
+│   ├── instance/              # Banco de dados SQLite
+│   ├── config.py              # Configurações da aplicação
+│   ├── run.py                 # Entry point do servidor
+│   ├── requirements.txt       # Dependências Python
+│   └── README.md              # Documentação do backend
+│
+└── frontend/                   # 🟢 Interface React (Vite)
     ├── src/
-    │   ├── components/
-    │   ├── context/
-    │   ├── pages/
-    │   ├── services/
-    │   ├── App.jsx
-    │   └── main.jsx
-    ├── index.html
-    ├── package.json
-    ├── tailwind.config.js
-    └── vite.config.js
+    │   ├── components/        # Componentes reutilizáveis
+    │   ├── pages/             # Páginas da aplicação
+    │   ├── services/          # Comunicação com API
+    │   └── context/           # Gerenciamento de estado
+    ├── public/                # Arquivos públicos
+    ├── package.json           # Dependências Node
+    ├── vite.config.js         # Configuração Vite
+    └── README.md              # Documentação do frontend
 ```
 
-## 🔧 Como Executar
+## 🚀 Início Rápido
 
 ### Pré-requisitos
+- **Backend**: Python 3.8+ e pip
+- **Frontend**: Node.js 16+ e npm
 
-- Python 3.11+
-- pip
+### Executar Localmente
 
-### Passo a Passo
-
-1. **Configure as variáveis de ambiente:**
-   ```bash
-   cp .env.example .env
-   ```
-   Edite o arquivo `.env` se necessário.
-
-2. **Instale as dependências:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Inicialize o banco de dados:**
-   ```bash
-   flask db init
-   flask db migrate -m "Initial migration"
-   flask db upgrade
-   ```
-
-4. **Crie o usuário administrador:**
-   ```bash
-   python create_admin.py
-   ```
-
-5. **Execute a aplicação:**
-   ```bash
-   python run.py
-   ```
-
-6. **Execute o Frontend:**
-   Em um novo terminal, navegue até a pasta `frontend` e execute:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-A API estará disponível em `http://localhost:5000` e o Frontend em `http://localhost:5173`
-
-## 🔐 Autenticação
-
-### Login
+**1. Backend:**
 ```bash
-POST /auth/login
-Content-Type: application/json
-
-{
-  "email": "admin@clinic.com",
-  "senha": "admin123"
-}
+cd backend
+pip install -r requirements.txt
+cp .env.example .env
+python run.py
 ```
+Servidor: `http://localhost:5000`
 
-**Resposta:**
-```json
-{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "user": {
-    "id": "uuid",
-    "nome": "Administrador",
-    "email": "admin@clinic.com",
-    "tipo": "admin"
-  }
-}
-```
-
-### Uso do Token
-Para acessar endpoints protegidos, inclua o token no header:
-```
-Authorization: Bearer <access_token>
-```
-
-## 📚 Endpoints da API
-
-### 👥 Usuários
-
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| POST | `/users` | Criar usuário | Admin |
-| GET | `/users` | Listar usuários | Admin |
-| GET | `/users/search?email=...` | Buscar por email | Autenticado |
-| PUT | `/users/<id>` | Atualizar usuário | Próprio usuário ou Admin |
-| DELETE | `/users/<id>` | Remover usuário | Admin |
-| POST | `/users/<id>/reset-password` | Resetar senha | Admin |
-
-### 🏥 Pacientes
-
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| POST | `/patients` | Criar paciente | Autenticado |
-| GET | `/patients` | Listar pacientes | Autenticado |
-| GET | `/patients/<id>` | Buscar por ID | Autenticado |
-| PUT | `/patients/<id>` | Atualizar paciente | Autenticado |
-| DELETE | `/patients/<id>` | Remover paciente | Autenticado |
-
-### 🔬 Procedimentos
-
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| POST | `/procedures` | Criar procedimento | Admin |
-| GET | `/procedures` | Listar procedimentos | Autenticado |
-| GET | `/procedures/<id>` | Buscar por ID | Autenticado |
-| PUT | `/procedures/<id>` | Atualizar procedimento | Admin |
-| DELETE | `/procedures/<id>` | Remover procedimento | Admin |
-
-### 📅 Atendimentos
-
-| Método | Endpoint | Descrição | Permissão |
-|--------|----------|-----------|-----------|
-| POST | `/appointments` | Criar atendimento | Autenticado |
-| GET | `/appointments` | Listar atendimentos | Autenticado |
-| GET | `/appointments/<id>` | Buscar por ID | Autenticado |
-| PUT | `/appointments/<id>` | Atualizar atendimento | Criador ou Admin |
-| DELETE | `/appointments/<id>` | Remover atendimento | Criador ou Admin |
-
-### 📄 Parâmetros de Paginação
-
-Todos os endpoints de listagem aceitam:
-- `?page=1` - Número da página (padrão: 1)
-- `?limit=10` - Itens por página (padrão: 10, máximo: 100)
-
-### 📅 Filtros de Data (Atendimentos)
-
-- `?start_date=2024-01-01T00:00:00` - Data inicial
-- `?end_date=2024-12-31T23:59:59` - Data final
-
-## 📋 Exemplos de Requisições
-
-### Criar Paciente
+**2. Frontend:**
 ```bash
-POST /patients
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "cpf": "12345678901",
-  "nome": "João Silva",
-  "email": "joao@email.com",
-  "telefone": "11999999999",
-  "data_nascimento": "1990-01-15",
-  "endereco": {
-    "estado": "SP",
-    "cidade": "São Paulo",
-    "bairro": "Centro",
-    "cep": "01000000",
-    "rua": "Rua das Flores",
-    "numero": "123"
-  },
-  "responsible": {
-    "nome": "Maria Silva",
-    "cpf": "98765432100",
-    "data_nascimento": "1985-05-10",
-    "email": "maria@email.com",
-    "telefone": "11888888888"
-  }
-}
+cd frontend
+npm install
+npm run dev
 ```
+Aplicação: `http://localhost:5173`
 
-### Criar Atendimento
+**3. Criar Usuário Admin:**
 ```bash
-POST /appointments
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "data_hora": "2024-01-15T14:30:00",
-  "patient_id": "uuid-do-paciente",
-  "tipo": "particular",
-  "procedures": ["uuid-procedimento-1", "uuid-procedimento-2"]
-}
-```
-
-## 🛡️ Regras de Negócio
-
-### Usuários
-- Email único no sistema
-- Tipos: `admin` ou `default`
-- Apenas admins podem criar/remover usuários
-- Usuários só podem alterar próprios dados
-- Não pode remover usuário com atendimentos
-
-### Pacientes
-- CPF e email únicos
-- Menores de idade requerem responsável
-- Responsável deve ser maior de idade
-- Não pode remover paciente com atendimentos
-
-### Procedimentos
-- Nome único
-- Apenas admins podem gerenciar
-- Não pode remover se usado em atendimentos
-
-### Atendimentos
-- Deve ter pelo menos um procedimento
-- Tipo "plano" requer número da carteira
-- Valor calculado automaticamente
-- Apenas criador ou admin podem editar/remover
-
-## 📊 Status Codes HTTP
-
-- `200` - Sucesso
-- `201` - Criado com sucesso  
-- `400` - Erro na requisição
-- `401` - Não autenticado
-- `403` - Sem permissão
-- `404` - Não encontrado
-- `500` - Erro interno
-
-## 🤝 Usuário Padrão
-
-O sistema cria automaticamente um usuário administrador:
-- **Email:** admin@clinic.com
-- **Senha:** admin123
-- **Tipo:** admin
-
-## 📝 Banco de Dados
-
-O sistema utiliza SQLite que é criado automaticamente no arquivo `clinic.db`. Para resetar o banco:
-
-```bash
-rm clinic.db
-rm -rf migrations/
-flask db init
-flask db migrate -m "Initial migration"
-flask db upgrade
+cd backend
 python create_admin.py
 ```
 
-## 🔄 Comandos Úteis
+## 🔵 Backend (Flask/Python)
+
+### Estrutura MVC
+
+O backend segue o padrão **MVC (Model-View-Controller)** com camada de serviços:
+
+- **Models** (`app/models/`) - Definição de dados e relacionamentos
+- **Schemas** (`app/schemas/`) - Validação e serialização (View)
+- **Controllers** (`app/controllers/`) - Endpoints HTTP e controle de requisições
+- **Services** (`app/services/`) - Lógica de negócio e regras
+
+### Instalação
 
 ```bash
-# Criar nova migration
-flask db migrate -m "Descrição da mudança"
+cd backend
+pip install -r requirements.txt
+```
 
-# Aplicar migrations
-flask db upgrade
+### Configuração
 
-# Resetar usuário admin
-python create_admin.py
+Crie um arquivo `.env` baseado no `.env.example`:
 
-# Executar em modo debug
+```env
+DATABASE_URL=sqlite:///clinic.db
+JWT_SECRET_KEY=sua-chave-secreta-aqui
+JWT_ACCESS_TOKEN_EXPIRES=3600
+FLASK_DEBUG=True
+FLASK_ENV=development
+```
+
+### Executar
+
+```bash
+# Modo desenvolvimento
+python run.py
+
+# Com debug
 FLASK_DEBUG=True python run.py
 ```
+
+### Comandos Úteis
+
+```bash
+# Criar usuário administrador
+python create_admin.py
+
+# Executar migrações
+flask db upgrade
+
+# Criar nova migração
+flask db migrate -m "descrição da mudança"
+
+# Reverter migração
+flask db downgrade
+```
+
+## 🟢 Frontend (React/Vite)
+
+### Instalação
+
+```bash
+cd frontend
+npm install
+```
+
+### Executar
+
+```bash
+# Modo desenvolvimento
+npm run dev
+
+# Build de produção
+npm run build
+
+# Preview do build
+npm run preview
+
+# Lint
+npm run lint
+```
+
+### Configuração
+
+O frontend se conecta automaticamente ao backend em `http://localhost:5000`. Para alterar, edite o arquivo de configuração da API.
+
+## 🏗️ Arquitetura
+
+### Backend - Padrão MVC
+
+```
+Request → Controller → Service → Model → Database
+                ↓
+            Schema (Validation)
+                ↓
+            Response (JSON)
+```
+
+**Componentes:**
+- **Models**: Estrutura de dados (User, Patient, Appointment, Procedure, AuditLog)
+- **Schemas**: Validação automática com Marshmallow
+- **Controllers**: Endpoints REST organizados por recurso
+- **Services**: Lógica de negócio isolada e reutilizável
+- **Utils**: Autenticação JWT, paginação, validadores
+
+### Frontend - React + Vite
+
+```
+User → Pages → Components → Services → API
+         ↓
+     Context (State)
+```
+
+**Componentes:**
+- **Pages**: Telas principais (Login, Dashboard, Pacientes, etc.)
+- **Components**: Componentes reutilizáveis (Navbar, Cards, Forms)
+- **Services**: Comunicação com backend via Axios
+- **Context**: Gerenciamento de estado global (Auth, Theme)
+
+## 📡 API Endpoints
+
+### Autenticação
+- `POST /auth/login` - Login de usuário/paciente
+- `POST /auth/change-password` - Alterar senha
+
+### Usuários
+- `GET /users` - Listar usuários (admin)
+- `POST /users` - Criar usuário (admin)
+- `GET /users/search?email=` - Buscar por email
+- `PUT /users/:id` - Atualizar usuário
+- `DELETE /users/:id` - Remover usuário (admin)
+- `POST /users/:id/reset-password` - Resetar senha (admin)
+
+### Pacientes
+- `GET /patients` - Listar pacientes
+- `POST /patients` - Criar paciente
+- `GET /patients/:id` - Buscar paciente
+- `PUT /patients/:id` - Atualizar paciente
+- `DELETE /patients/:id` - Remover paciente
+
+### Atendimentos
+- `GET /appointments` - Listar atendimentos
+- `POST /appointments` - Criar atendimento
+- `GET /appointments/:id` - Buscar atendimento
+- `PUT /appointments/:id` - Atualizar atendimento
+- `DELETE /appointments/:id` - Remover atendimento
+
+### Procedimentos
+- `GET /procedures` - Listar procedimentos
+- `POST /procedures` - Criar procedimento (admin)
+- `GET /procedures/:id` - Buscar procedimento
+- `PUT /procedures/:id` - Atualizar procedimento (admin)
+- `DELETE /procedures/:id` - Remover procedimento (admin)
+
+### Dashboard
+- `GET /dashboard/stats` - Estatísticas gerais
+
+### Auditoria
+- `GET /audit` - Logs de auditoria (admin)
+
+## ✨ Funcionalidades
+
+### Autenticação e Autorização
+- ✅ Login de usuários (admin/default)
+- ✅ Login de pacientes
+- ✅ Autenticação JWT
+- ✅ Controle de permissões por tipo de usuário
+- ✅ Primeiro acesso com troca de senha obrigatória
+
+### Gerenciamento de Pacientes
+- ✅ Cadastro completo com endereço
+- ✅ Cadastro de responsável (para menores de idade)
+- ✅ Validação de CPF e email únicos
+- ✅ Histórico de atendimentos
+
+### Agendamento de Consultas
+- ✅ Criação de atendimentos
+- ✅ Associação com múltiplos procedimentos
+- ✅ Cálculo automático de valor total
+- ✅ Filtros por data
+- ✅ Tipos: Plano de saúde ou Particular
+
+### Procedimentos Médicos
+- ✅ Cadastro de procedimentos
+- ✅ Valores diferenciados (plano/particular)
+- ✅ Descrição detalhada
+
+### Dashboard
+- ✅ Total de pacientes
+- ✅ Atendimentos do dia
+- ✅ Total de procedimentos
+- ✅ Receita mensal
+
+### Auditoria
+- ✅ Log de todas as ações
+- ✅ Rastreamento de usuário e IP
+- ✅ Histórico de alterações
+- ✅ Filtros avançados
+
+## 🛠️ Tecnologias
+
+### Backend
+| Tecnologia | Versão | Descrição |
+|------------|--------|-----------|
+| Flask | 2.3.3 | Framework web |
+| SQLAlchemy | 3.0.5 | ORM para banco de dados |
+| Marshmallow | 3.20.1 | Serialização e validação |
+| Flask-JWT-Extended | 4.5.3 | Autenticação JWT |
+| Flask-CORS | 4.0.0 | CORS para API |
+| SQLite | - | Banco de dados |
+
+### Frontend
+| Tecnologia | Descrição |
+|------------|-----------|
+| React | 18.x | Biblioteca UI |
+| Vite | 5.x | Build tool |
+| TailwindCSS | 3.x | Framework CSS |
+| React Router | 6.x | Roteamento |
+| Axios | - | Cliente HTTP |
+
+## 📝 Desenvolvimento
+
+### Padrões de Código
+
+**Backend:**
+- PEP 8 para Python
+- Docstrings em funções públicas
+- Type hints quando aplicável
+
+**Frontend:**
+- ESLint configurado
+- Componentes funcionais com Hooks
+- PropTypes para validação
+
+### Estrutura de Commits
+
+```
+tipo(escopo): descrição curta
+
+Descrição detalhada (opcional)
+```
+
+**Tipos:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+## 🤝 Contribuindo
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Proprietary - Clínica Protheus © 2025
+
+---
+
+**Desenvolvido com ❤️ para Clínica Protheus**
