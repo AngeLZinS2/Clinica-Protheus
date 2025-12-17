@@ -327,8 +327,7 @@ Descrição detalhada (opcional)
 
 ## 📄 Licença
 
-Proprietary - Clínica Protheus © 2025
+Proprietary - Angelo Neri © 2025
 
 ---
 
-**Desenvolvido com ❤️ para Clínica Protheus**
