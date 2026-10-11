@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { isDemoMode, startDemo } from '../services/demoApi';
 
 const AuthContext = createContext({});
 
@@ -64,8 +65,14 @@ export function AuthProvider({ children }) {
         toast.success('Logout realizado.');
     };
 
+    const enterPreview = () => {
+        const demo = startDemo();
+        setUser(demo);
+        toast.success('Modo demonstração iniciado.');
+    };
+
     return (
-        <AuthContext.Provider value={{ signed: !!user, user, updateUser, login, logout, loading }}>
+        <AuthContext.Provider value={{ signed: !!user, user, updateUser, login, logout, enterPreview, isPreview: isDemoMode(), loading }}>
             {children}
         </AuthContext.Provider>
     );

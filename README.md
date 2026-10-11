@@ -9,6 +9,8 @@ Sistema full stack de gestão clínica criado para centralizar pacientes, consul
 
 **Aplicação online:** [173.212.251.120:8083](http://173.212.251.120:8083)
 
+Use o botão **Preview com dados de demonstração** para explorar o sistema sem cadastro. Os dados e as alterações desse modo ficam isolados no navegador e não afetam o banco de produção.
+
 ## Sobre o projeto
 
 A Clínica Protheus transforma processos comuns de uma clínica em um fluxo único: cadastro de pacientes, organização da agenda, acompanhamento de procedimentos e visão gerencial. A interface foi desenhada para funcionar bem no computador e no celular, com temas claro e escuro, navegação acessível e uma experiência de login com DNA interativo em 3D.
@@ -25,6 +27,7 @@ A Clínica Protheus transforma processos comuns de uma clínica em um fluxo úni
 - trilha de auditoria para ações relevantes;
 - paginação, validação de dados e respostas padronizadas da API;
 - interface responsiva, acessível e compatível com movimento reduzido.
+- modo Preview com dados simulados para apresentação do portfólio.
 
 ## Arquitetura
 

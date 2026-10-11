@@ -2,7 +2,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Eye, EyeOff, ShieldCheck, Stethoscope } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, MonitorPlay, ShieldCheck, Stethoscope } from 'lucide-react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import Footer from '../components/Footer';
 
@@ -16,7 +16,7 @@ export default function Login() {
     const [error, setError] = useState('');
     const [showChangePassword, setShowChangePassword] = useState(false);
     const submitting = useRef(false);
-    const { login, user, updateUser } = useAuth();
+    const { login, user, updateUser, enterPreview } = useAuth();
     const navigate = useNavigate();
     const reduceMotion = useReducedMotion();
 
@@ -46,6 +46,11 @@ export default function Login() {
     const handlePasswordChanged = () => {
         setShowChangePassword(false);
         updateUser({ first_access: false });
+        navigate('/');
+    };
+
+    const handlePreview = () => {
+        enterPreview();
         navigate('/');
     };
 
@@ -91,6 +96,7 @@ export default function Login() {
                         </div>
                         {error && <p id="login-error" role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-800">{error}</p>}
                         <button type="submit" disabled={loading} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl bg-sky-800 px-5 py-3 text-base font-semibold text-white transition-colors duration-[160ms] hover:bg-sky-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-700 disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none"><span>{loading ? 'Entrando…' : 'Entrar'}</span>{!loading && <ArrowRight size={19} aria-hidden="true" />}</button>
+                        <button type="button" onClick={handlePreview} disabled={loading} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-base font-semibold text-sky-900 transition-colors duration-[160ms] hover:border-sky-300 hover:bg-sky-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-700 disabled:opacity-70 motion-reduce:transition-none"><MonitorPlay size={19} aria-hidden="true" /><span>Preview com dados de demonstração</span></button>
                     {loading && <p role="status" className="sr-only">Entrando na clínica…</p>}</form>
                     <div className="mt-8 border-t border-slate-200 pt-6 text-sm leading-relaxed text-slate-500">Precisa de acesso ou esqueceu sua senha?<br /><span className="text-slate-700">Entre em contato com a administração da clínica.</span></div>
                 </motion.div>

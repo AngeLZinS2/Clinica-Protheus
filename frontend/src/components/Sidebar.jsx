@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { LayoutDashboard, Users, Calendar, Stethoscope, UserCog, LogOut, UserCircle, X, FileText } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onClose }) {
-    const { user, logout } = useAuth();
+    const { user, logout, isPreview } = useAuth();
     const location = useLocation();
     const dialogRef = useRef(null);
     const closeRef = useRef(onClose);
@@ -54,6 +54,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 {mobile && <button type="button" onClick={onClose} aria-label="Fechar menu de navegação" className="rounded-lg p-2.5 text-slate-500 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-700 dark:text-gray-300 dark:hover:bg-gray-800"><X className="h-5 w-5" aria-hidden="true" /></button>}
             </div>
             <nav aria-label="Navegação principal" className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-5">
+                {isPreview && <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-xs font-medium leading-relaxed text-teal-900 dark:border-teal-900 dark:bg-teal-950 dark:text-teal-200">Modo demonstração · alterações são temporárias</div>}
                 {navigation.map((item) => {
                     const active = location.pathname === item.href;
                     return <Link key={item.href} to={item.href} onClick={mobile ? onClose : undefined} aria-current={active ? 'page' : undefined} className={clsx('flex items-center gap-3 rounded-xl border px-3 py-3 text-sm font-medium transition-colors duration-[160ms] ease-[cubic-bezier(.2,0,0,1)] motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700', active ? 'border-sky-100 bg-sky-50 text-sky-900 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-sky-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white')}><item.icon className="h-5 w-5 shrink-0" aria-hidden="true" /><span>{item.name}</span>{active && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-teal-700 dark:bg-teal-400" aria-hidden="true" />}</Link>;

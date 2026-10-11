@@ -28,6 +28,8 @@ Além da implementação das funcionalidades, trabalhei na arquitetura, validaç
 
 🔗 Projeto online: http://173.212.251.120:8083
 
+Você pode clicar em **Preview com dados de demonstração** e conhecer o sistema sem criar uma conta.
+
 💻 Código no GitHub: https://github.com/AngeLZinS2/Clinica-Protheus
 
 Feedbacks são muito bem-vindos!
