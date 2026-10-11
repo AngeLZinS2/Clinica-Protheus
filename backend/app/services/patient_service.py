@@ -1,4 +1,5 @@
 from datetime import date
+import re
 from app import db
 from app.models.patient import Patient, Responsible
 from app.utils.validators import validate_cpf, validate_email, calculate_age
@@ -8,6 +9,8 @@ class PatientService:
     @staticmethod
     def create_patient(data):
         """Create a new patient"""
+        data = dict(data)
+        data['cpf'] = re.sub(r'\D', '', data['cpf'])
         # Validate CPF
         if not validate_cpf(data['cpf']):
             return None, "CPF inválido"
@@ -26,12 +29,14 @@ class PatientService:
         
         # Parse birth date
         try:
-            birth_date = date.fromisoformat(data['data_nascimento'])
-        except ValueError:
+            birth_date = data['data_nascimento'] if isinstance(data['data_nascimento'], date) else date.fromisoformat(data['data_nascimento'])
+        except (ValueError, TypeError):
             return None, "Formato de data inválido (use YYYY-MM-DD)"
         
+        if birth_date > date.today():
+            return None, 'Data de nascimento não pode ser futura'
+
         # Strip CPF formatting
-        import re
         clean_cpf = re.sub(r'\D', '', data['cpf'])
         
         # Create patient with default password (CPF)
@@ -53,7 +58,7 @@ class PatientService:
         
         # If patient is minor, responsible is required
         if calculate_age(birth_date) < 18:
-            if 'responsible' not in data:
+            if not data.get('responsible'):
                 return None, "Paciente menor de idade requer dados do responsável"
             
             responsible_data = data['responsible']
@@ -68,10 +73,10 @@ class PatientService:
             
             # Check if responsible is minor
             try:
-                responsible_birth = date.fromisoformat(responsible_data['data_nascimento'])
+                responsible_birth = responsible_data['data_nascimento'] if isinstance(responsible_data['data_nascimento'], date) else date.fromisoformat(responsible_data['data_nascimento'])
                 if calculate_age(responsible_birth) < 18:
                     return None, "Responsável não pode ser menor de idade"
-            except ValueError:
+            except (ValueError, TypeError):
                 return None, "Data de nascimento do responsável inválida"
             
             responsible = Responsible(
@@ -104,7 +109,6 @@ class PatientService:
             if not validate_cpf(data['cpf']):
                 return None, "CPF inválido"
             
-            import re
             clean_cpf = re.sub(r'\D', '', data['cpf'])
             
             if Patient.query.filter_by(cpf=clean_cpf).first():
@@ -127,8 +131,8 @@ class PatientService:
         
         if 'data_nascimento' in data:
             try:
-                patient.data_nascimento = date.fromisoformat(data['data_nascimento'])
-            except ValueError:
+                patient.data_nascimento = data['data_nascimento'] if isinstance(data['data_nascimento'], date) else date.fromisoformat(data['data_nascimento'])
+            except (ValueError, TypeError):
                 return None, "Formato de data inválido"
         
         # Update address
@@ -140,8 +144,11 @@ class PatientService:
                     setattr(patient, field, address[field])
         
         # Update responsible if provided
-        if 'responsible' in data:
+        if 'responsible' in data and data['responsible'] is not None:
             responsible_data = data['responsible']
+            required = {'nome', 'cpf', 'email', 'telefone', 'data_nascimento'}
+            if not patient.responsible and not required.issubset(responsible_data):
+                return None, 'Dados completos do responsável são obrigatórios'
             
             if patient.responsible:
                 # Update existing responsible
@@ -157,11 +164,11 @@ class PatientService:
                 
                 if 'data_nascimento' in responsible_data:
                     try:
-                        birth_date = date.fromisoformat(responsible_data['data_nascimento'])
+                        birth_date = responsible_data['data_nascimento'] if isinstance(responsible_data['data_nascimento'], date) else date.fromisoformat(responsible_data['data_nascimento'])
                         if calculate_age(birth_date) < 18:
                             return None, "Responsável não pode ser menor de idade"
                         responsible.data_nascimento = birth_date
-                    except ValueError:
+                    except (ValueError, TypeError):
                         return None, "Data de nascimento do responsável inválida"
             else:
                 # Create new responsible
@@ -171,10 +178,10 @@ class PatientService:
                     return None, "Email do responsável inválido"
                 
                 try:
-                    birth_date = date.fromisoformat(responsible_data['data_nascimento'])
+                    birth_date = responsible_data['data_nascimento'] if isinstance(responsible_data['data_nascimento'], date) else date.fromisoformat(responsible_data['data_nascimento'])
                     if calculate_age(birth_date) < 18:
                         return None, "Responsável não pode ser menor de idade"
-                except ValueError:
+                except (ValueError, TypeError):
                     return None, "Data de nascimento do responsável inválida"
                 
                 responsible = Responsible(
@@ -186,6 +193,12 @@ class PatientService:
                 )
                 patient.responsible = responsible
         
+        if patient.data_nascimento > date.today():
+            db.session.rollback()
+            return None, 'Data de nascimento não pode ser futura'
+        if calculate_age(patient.data_nascimento) < 18 and not patient.responsible:
+            db.session.rollback()
+            return None, 'Paciente menor de idade requer dados do responsável'
         try:
             db.session.commit()
             return patient, None
@@ -200,8 +213,8 @@ class PatientService:
         if not patient:
             return False, "Paciente não encontrado"
         
-        # if patient.appointments:
-        #     return False, "Não é possível remover paciente com atendimentos"
+        if patient.appointments:
+            return False, "Não é possível remover paciente com atendimentos"
         
         try:
             db.session.delete(patient)

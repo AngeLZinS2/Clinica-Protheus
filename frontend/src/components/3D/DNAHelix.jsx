@@ -1,49 +1,83 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Sphere, Cylinder } from '@react-three/drei';
+import * as THREE from 'three';
 
-export default function DNAHelix(props) {
-    const group = useRef();
+const atomGeometry = new THREE.SphereGeometry(0.13, 18, 18);
+const rungGeometry = new THREE.CylinderGeometry(0.025, 0.025, 1, 8);
 
-    useFrame((state) => {
-        const t = state.clock.getElapsedTime();
-        group.current.rotation.y = t * 0.5;
-        group.current.rotation.z = Math.sin(t * 0.3) * 0.1;
-    });
-
-    const count = 20;
-    const radius = 2;
-    const height = 8;
+function Rung({ start, end, index }) {
+    const { midpoint, quaternion, length } = useMemo(() => {
+        const from = new THREE.Vector3(...start);
+        const to = new THREE.Vector3(...end);
+        const direction = to.clone().sub(from);
+        return {
+            midpoint: from.clone().add(to).multiplyScalar(0.5),
+            quaternion: new THREE.Quaternion().setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                direction.clone().normalize(),
+            ),
+            length: direction.length(),
+        };
+    }, [start, end]);
 
     return (
-        <group ref={group} {...props} dispose={null}>
-            {Array.from({ length: count }).map((_, i) => {
-                const t = i / count;
-                const angle = t * Math.PI * 4;
-                const y = (t - 0.5) * height;
+        <group>
+            <mesh geometry={rungGeometry} position={midpoint} quaternion={quaternion} scale={[1, length, 1]}>
+                <meshStandardMaterial color="#d9f6ff" transparent opacity={0.48} roughness={0.35} />
+            </mesh>
+            <mesh geometry={atomGeometry} position={start}>
+                <meshPhysicalMaterial color={index % 2 ? '#5eead4' : '#67e8f9'} emissive="#14b8a6" emissiveIntensity={0.42} roughness={0.22} metalness={0.08} clearcoat={0.75} />
+            </mesh>
+            <mesh geometry={atomGeometry} position={end}>
+                <meshPhysicalMaterial color={index % 2 ? '#7dd3fc' : '#99f6e4'} emissive="#0284c7" emissiveIntensity={0.38} roughness={0.22} metalness={0.08} clearcoat={0.75} />
+            </mesh>
+        </group>
+    );
+}
 
-                const x1 = Math.cos(angle) * radius;
-                const z1 = Math.sin(angle) * radius;
-                const x2 = Math.cos(angle + Math.PI) * radius;
-                const z2 = Math.sin(angle + Math.PI) * radius;
+export default function DNAHelix({ reducedMotion = false, ...props }) {
+    const group = useRef();
+    const helix = useMemo(() => {
+        const turns = Math.PI * 4.6;
+        const radius = 1.05;
+        const height = 5.8;
+        const curvePoints = 72;
+        const rungCount = 22;
+        const pointAt = (progress, offset = 0) => {
+            const angle = progress * turns + offset;
+            return [Math.cos(angle) * radius, (progress - 0.5) * height, Math.sin(angle) * radius];
+        };
+        const strandA = Array.from({ length: curvePoints }, (_, index) => new THREE.Vector3(...pointAt(index / (curvePoints - 1))));
+        const strandB = Array.from({ length: curvePoints }, (_, index) => new THREE.Vector3(...pointAt(index / (curvePoints - 1), Math.PI)));
+        const rungs = Array.from({ length: rungCount }, (_, index) => {
+            const progress = index / (rungCount - 1);
+            return [pointAt(progress), pointAt(progress, Math.PI)];
+        });
+        return {
+            curveA: new THREE.CatmullRomCurve3(strandA),
+            curveB: new THREE.CatmullRomCurve3(strandB),
+            rungs,
+        };
+    }, []);
 
-                return (
-                    <group key={i} position={[0, y, 0]}>
-                        {/* Strands */}
-                        <Sphere position={[x1, 0, z1]} args={[0.3, 16, 16]}>
-                            <meshStandardMaterial color="#0ea5e9" emissive="#0ea5e9" emissiveIntensity={0.5} roughness={0.2} />
-                        </Sphere>
-                        <Sphere position={[x2, 0, z2]} args={[0.3, 16, 16]}>
-                            <meshStandardMaterial color="#2dd4bf" emissive="#2dd4bf" emissiveIntensity={0.5} roughness={0.2} />
-                        </Sphere>
+    useFrame((state, delta) => {
+        if (!group.current || reducedMotion) return;
+        group.current.rotation.y += delta * 0.16;
+        group.current.rotation.z = -0.17 + Math.sin(state.clock.elapsedTime * 0.35) * 0.025;
+        group.current.position.y = Math.sin(state.clock.elapsedTime * 0.45) * 0.08;
+    });
 
-                        {/* Connector */}
-                        <Cylinder position={[0, 0, 0]} args={[0.05, 0.05, radius * 2, 8]} rotation={[0, -angle, Math.PI / 2]}>
-                            <meshStandardMaterial color="#e2e8f0" transparent opacity={0.3} />
-                        </Cylinder>
-                    </group>
-                );
-            })}
+    return (
+        <group ref={group} rotation={[-0.08, -0.45, -0.17]} {...props}>
+            <mesh>
+                <tubeGeometry args={[helix.curveA, 96, 0.055, 10, false]} />
+                <meshPhysicalMaterial color="#67e8f9" emissive="#0891b2" emissiveIntensity={0.46} roughness={0.2} clearcoat={0.9} />
+            </mesh>
+            <mesh>
+                <tubeGeometry args={[helix.curveB, 96, 0.055, 10, false]} />
+                <meshPhysicalMaterial color="#5eead4" emissive="#0d9488" emissiveIntensity={0.42} roughness={0.2} clearcoat={0.9} />
+            </mesh>
+            {helix.rungs.map(([start, end], index) => <Rung key={index} start={start} end={end} index={index} />)}
         </group>
     );
 }

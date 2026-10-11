@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
 export default function AppointmentForm({ appointment, onSuccess, onCancel }) {
-    const { register, handleSubmit, control, watch, setValue, formState: { errors, isSubmitting } } = useForm({
+    const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
         defaultValues: {
             patient_id: '',
             data_hora: '',

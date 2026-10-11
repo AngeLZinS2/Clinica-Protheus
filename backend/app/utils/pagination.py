@@ -9,11 +9,12 @@ def paginate_query(query, page=None, per_page=None, schema=None):
         per_page: Items per page (default from request args)
         schema: Marshmallow schema instance for serialization (optional)
     """
-    page = page or request.args.get('page', 1, type=int)
-    per_page = per_page or request.args.get('limit', 10, type=int)
+    page = page if page is not None else request.args.get('page', 1, type=int)
+    per_page = per_page if per_page is not None else request.args.get('limit', 10, type=int)
     
     # Limit per_page to prevent abuse
-    per_page = min(per_page, 100)
+    page = max(page, 1)
+    per_page = max(1, min(per_page, 100))
     
     pagination = query.paginate(
         page=page,

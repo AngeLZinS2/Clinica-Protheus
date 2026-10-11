@@ -1,7 +1,10 @@
 from flask import Blueprint, request, jsonify
+from app import db
 from flask_jwt_extended import jwt_required
 from marshmallow import ValidationError
 from app.models.patient import Patient
+from app.models.user import User
+from app.utils.auth import get_current_user
 from app.services.patient_service import PatientService
 from app.utils.pagination import paginate_query
 from app.schemas.patient_schema import PatientSchema, PatientCreateSchema, PatientUpdateSchema
@@ -16,6 +19,8 @@ patient_update_schema = PatientUpdateSchema()
 @patients_bp.route('', methods=['POST'])
 @jwt_required()
 def create_patient():
+    if not isinstance(get_current_user(), User):
+        return jsonify({'error': 'Acesso negado'}), 403
     """Create new patient"""
     try:
         data = patient_create_schema.load(request.get_json())
@@ -24,6 +29,7 @@ def create_patient():
     
     patient, error = PatientService.create_patient(data)
     if error:
+        db.session.rollback()
         return jsonify({'error': error}), 400
     
     return jsonify(patient_schema.dump(patient)), 201
@@ -31,6 +37,8 @@ def create_patient():
 @patients_bp.route('', methods=['GET'])
 @jwt_required()
 def list_patients():
+    if not isinstance(get_current_user(), User):
+        return jsonify({'error': 'Acesso negado'}), 403
     """List all patients with pagination"""
     query = Patient.query.order_by(Patient.created_at.desc())
     result = paginate_query(query, schema=patient_schema)
@@ -39,6 +47,9 @@ def list_patients():
 @patients_bp.route('/<patient_id>', methods=['GET'])
 @jwt_required()
 def get_patient(patient_id):
+    actor = get_current_user()
+    if actor is None or (isinstance(actor, Patient) and actor.id != patient_id):
+        return jsonify({'error': 'Acesso negado'}), 403
     """Get patient by ID"""
     patient = Patient.query.get(patient_id)
     if not patient:
@@ -49,6 +60,9 @@ def get_patient(patient_id):
 @patients_bp.route('/<patient_id>', methods=['PUT'])
 @jwt_required()
 def update_patient(patient_id):
+    actor = get_current_user()
+    if actor is None or (isinstance(actor, Patient) and actor.id != patient_id):
+        return jsonify({'error': 'Acesso negado'}), 403
     """Update patient data"""
     try:
         data = patient_update_schema.load(request.get_json())
@@ -57,7 +71,7 @@ def update_patient(patient_id):
     
     patient, error = PatientService.update_patient(patient_id, data)
     if error:
-        print(f"Error updating patient: {error}")
+        db.session.rollback()
         return jsonify({'error': error}), 400
     
     return jsonify(patient_schema.dump(patient)), 200
@@ -65,6 +79,8 @@ def update_patient(patient_id):
 @patients_bp.route('/<patient_id>', methods=['DELETE'])
 @jwt_required()
 def delete_patient(patient_id):
+    if not isinstance(get_current_user(), User):
+        return jsonify({'error': 'Acesso negado'}), 403
     """Delete patient"""
     success, error = PatientService.delete_patient(patient_id)
     if not success:

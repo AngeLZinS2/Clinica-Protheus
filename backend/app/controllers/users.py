@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from marshmallow import ValidationError
 from app.models.user import User
 from app.services.user_service import UserService
-from app.utils.auth import admin_required, get_current_user
+from app.utils.auth import admin_required, get_current_user, valid_password
 from app.utils.pagination import paginate_query
 from app.schemas.user_schema import UserSchema, UserCreateSchema, UserUpdateSchema
 
@@ -20,7 +20,7 @@ user_update_schema = UserUpdateSchema()
 def create_user():
     """Create new user (admin only)"""
     try:
-        data = user_create_schema.load(request.get_json())
+        data = user_create_schema.load(request.get_json(silent=True))
     except ValidationError as err:
         return jsonify({'error': err.messages}), 400
     
@@ -48,6 +48,9 @@ def search_user():
     
     current_user = get_current_user()
     
+    if not isinstance(current_user, User):
+        return jsonify({'error': 'Acesso negado'}), 403
+
     # Check permissions: Admin can search anyone, User can only search themselves
     if current_user.tipo != 'admin' and current_user.email != email:
         return jsonify({'error': 'Sem permissão para buscar este usuário'}), 403
@@ -63,11 +66,13 @@ def search_user():
 def update_user(user_id):
     """Update user data"""
     try:
-        data = user_update_schema.load(request.get_json())
+        data = user_update_schema.load(request.get_json(silent=True))
     except ValidationError as err:
         return jsonify({'error': err.messages}), 400
     
     current_user = get_current_user()
+    if not isinstance(current_user, User):
+        return jsonify({'error': 'Acesso negado'}), 403
     user, error = UserService.update_user(user_id, data, current_user)
     
     if error:
@@ -91,9 +96,9 @@ def delete_user(user_id):
 @admin_required
 def reset_password(user_id):
     """Reset user password (admin only)"""
-    data = request.get_json()
-    if not data or not data.get('nova_senha'):
-        return jsonify({'error': 'Nova senha é obrigatória'}), 400
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not valid_password(data.get('nova_senha')):
+        return jsonify({'error': 'Nova senha deve ter pelo menos 6 caracteres e no máximo 72 bytes'}), 400
     
     current_user = get_current_user()
     user, error = UserService.reset_password(user_id, data['nova_senha'], current_user)

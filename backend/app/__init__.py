@@ -12,6 +12,9 @@ def create_app(config_class):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
+    if not app.config.get('TESTING') and app.config.get('JWT_SECRET_KEY') in (None, '', 'your-secret-key-here'):
+        raise RuntimeError('Configure JWT_SECRET_KEY with a private secret before starting the application')
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
@@ -42,5 +45,11 @@ def create_app(config_class):
 
     from app.controllers.audit import audit_bp
     app.register_blueprint(audit_bp, url_prefix='/audit')
+
+    @app.get('/health')
+    def health():
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        return {'status': 'ok'}
     
     return app

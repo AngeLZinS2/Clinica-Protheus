@@ -4,7 +4,7 @@ class UserSchema(Schema):
     """Schema for User serialization"""
     id = fields.String(dump_only=True)
     nome = fields.String(required=True, validate=validate.Length(min=1, max=100))
-    email = fields.Email(required=True)
+    email = fields.Email(required=True, validate=validate.Length(max=120))
     tipo = fields.String(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
@@ -12,13 +12,13 @@ class UserSchema(Schema):
 class UserCreateSchema(Schema):
     """Schema for creating a new user"""
     nome = fields.String(required=True, validate=validate.Length(min=1, max=100))
-    email = fields.Email(required=True)
+    email = fields.Email(required=True, validate=validate.Length(max=120))
     senha = fields.String(required=True, validate=validate.Length(min=6), load_only=True)
     tipo = fields.String(validate=validate.OneOf(['admin', 'default']), missing='default')
 
 class UserUpdateSchema(Schema):
     """Schema for updating user data"""
     nome = fields.String(validate=validate.Length(min=1, max=100))
-    email = fields.Email()
+    email = fields.Email(validate=validate.Length(max=120))
     senha = fields.String(validate=validate.Length(min=6), load_only=True)
     senha_atual = fields.String(load_only=True)

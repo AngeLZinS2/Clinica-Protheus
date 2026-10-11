@@ -1,110 +1,89 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Users, Calendar, Stethoscope, Activity } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { Users, Calendar, Stethoscope, Wallet, ArrowRight, AlertCircle } from 'lucide-react';
 import api from '../services/api';
-import toast from 'react-hot-toast';
+
+const metrics = [
+    { key: 'total_patients', name: 'Pacientes cadastrados', icon: Users },
+    { key: 'appointments_today', name: 'Atendimentos hoje', icon: Calendar },
+    { key: 'total_procedures', name: 'Procedimentos cadastrados', icon: Stethoscope },
+    { key: 'monthly_revenue', name: 'Valor dos atendimentos no mês', icon: Wallet, currency: true },
+];
+const shortcuts = [
+    { name: 'Atendimentos', description: 'Consulte a agenda e gerencie os atendimentos.', to: '/appointments', icon: Calendar },
+    { name: 'Pacientes', description: 'Encontre cadastros e informações dos pacientes.', to: '/patients', icon: Users },
+    { name: 'Procedimentos', description: 'Consulte o catálogo de procedimentos da clínica.', to: '/procedures', icon: Stethoscope },
+];
+const number = new Intl.NumberFormat('pt-BR');
+const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function Dashboard() {
-    const { user } = useAuth();
-    const [stats, setStats] = useState([
-        { name: 'Total de Pacientes', value: '...', icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-        { name: 'Atendimentos Hoje', value: '...', icon: Calendar, color: 'text-green-500', bg: 'bg-green-500/10' },
-        { name: 'Procedimentos', value: '...', icon: Stethoscope, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-        { name: 'Faturamento Mensal', value: '...', icon: Activity, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-    ]);
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [attempt, setAttempt] = useState(0);
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const response = await api.get('/dashboard/stats');
-                const data = response.data;
-
-                setStats([
-                    { name: 'Total de Pacientes', value: data.total_patients.toString(), icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-                    { name: 'Atendimentos Hoje', value: data.appointments_today.toString(), icon: Calendar, color: 'text-green-500', bg: 'bg-green-500/10' },
-                    { name: 'Procedimentos', value: data.total_procedures.toString(), icon: Stethoscope, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-                    { name: 'Faturamento Mensal', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.monthly_revenue), icon: Activity, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-                ]);
-            } catch (error) {
-                console.error('Erro ao carregar estatísticas:', error);
-                toast.error('Erro ao carregar dados do dashboard');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
-    }, []);
-
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const item = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0 }
-    };
+        const controller = new AbortController();
+        setLoading(true);
+        setError(false);
+        api.get('/dashboard/stats', { signal: controller.signal })
+            .then(({ data }) => {
+                if (!metrics.every(({ key }) => typeof data[key] === 'number' && Number.isFinite(data[key]))) {
+                    throw new Error('Resposta de indicadores inválida');
+                }
+                setStats(data);
+            })
+            .catch(() => { if (!controller.signal.aborted) setError(true); })
+            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+        return () => controller.abort();
+    }, [attempt]);
 
     return (
-        <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="space-y-8"
-        >
-            <motion.div variants={item}>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
-                    Bem-vindo ao sistema de gestão clínica.
-                </p>
-            </motion.div>
+        <div className="space-y-8">
+            <header>
+                <p className="text-sm font-semibold text-sky-800 dark:text-sky-300">Gestão da clínica</p>
+                <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Visão geral</h1>
+                <p className="mt-2 text-slate-600 dark:text-slate-400">Acompanhe os indicadores e acesse as rotinas de atendimento.</p>
+            </header>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat) => (
-                    <motion.div
-                        key={stat.name}
-                        variants={item}
-                        className="glass-panel p-6 rounded-2xl relative overflow-hidden group"
-                    >
-                        <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${stat.color.replace('text-', 'bg-')}`}>
-                            <stat.icon className="h-24 w-24" />
-                        </div>
-                        <div className="relative">
-                            <div className={`p-3 rounded-xl w-fit ${stat.bg} ${stat.color} mb-4`}>
-                                <stat.icon className="h-6 w-6" />
-                            </div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-400">{stat.name}</p>
-                            <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {loading ? <div className="h-8 w-24 bg-gray-200 rounded animate-pulse"></div> : stat.value}
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <motion.div variants={item} className="glass-panel p-6 rounded-2xl">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Atendimentos Hoje</h3>
-                    <div className="flex items-center justify-center h-48 text-gray-500 dark:text-gray-400">
-                        Nenhum atendimento agendado para hoje.
+            <section aria-label="Indicadores da clínica" aria-busy={loading}>
+                {error ? (
+                    <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+                        <div className="flex items-center gap-2 font-semibold"><AlertCircle aria-hidden="true" className="h-5 w-5" />Não foi possível carregar os indicadores.</div>
+                        <p className="mt-2 text-sm">Tente novamente. Os atalhos abaixo continuam disponíveis.</p>
+                        <button onClick={() => setAttempt(value => value + 1)} className="mt-4 min-h-11 rounded-lg border border-amber-500 px-4 py-2 font-semibold hover:bg-amber-100 dark:hover:bg-amber-900">Tentar novamente</button>
                     </div>
-                </motion.div>
+                ) : (
+                    <>
+                        {loading && <p role="status" className="sr-only">Carregando indicadores.</p>}
+                        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            {metrics.map(({ key, name, icon: Icon, currency: isCurrency }) => (
+                                <div key={key} className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+                                    <Icon aria-hidden="true" className="mb-5 h-5 w-5 text-sky-700 dark:text-sky-400" />
+                                    <dt className="text-sm text-slate-600 dark:text-slate-400">{name}</dt>
+                                    <dd className="mt-2 break-words text-2xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">
+                                        {loading ? <span aria-hidden="true" className="block h-8 w-28 rounded bg-slate-100 dark:bg-slate-800" /> : (isCurrency ? currency : number).format(stats[key])}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                        <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">Valores conforme os registros da clínica. O valor mensal soma os atendimentos registrados, sem indicar confirmação de pagamento.</p>
+                    </>
+                )}
+            </section>
 
-                <motion.div variants={item} className="glass-panel p-6 rounded-2xl">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Avisos Recentes</h3>
-                    <div className="flex items-center justify-center h-48 text-gray-500 dark:text-gray-400">
-                        Nenhum aviso importante.
-                    </div>
-                </motion.div>
-            </div>
-        </motion.div>
+            <section aria-labelledby="quick-access">
+                <h2 id="quick-access" className="text-lg font-semibold text-slate-900 dark:text-white">Rotinas da clínica</h2>
+                <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                    {shortcuts.map(({ name, description, to, icon: Icon }) => (
+                        <Link key={to} to={to} className="group rounded-xl border border-slate-200 bg-white p-5 hover:border-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-700 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-sky-400">
+                            <div className="flex items-center gap-3 text-sky-800 dark:text-sky-300"><Icon aria-hidden="true" className="h-5 w-5" /><h3 className="font-semibold">{name}</h3><ArrowRight aria-hidden="true" className="ml-auto h-4 w-4" /></div>
+                            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{description}</p>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+        </div>
     );
 }

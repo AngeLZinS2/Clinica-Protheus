@@ -12,15 +12,16 @@ import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
+import { MotionConfig } from 'framer-motion';
 
 function PrivateRoute({ children }) {
   const { signed, loading, user } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+    return <div role="status" className="min-h-screen flex items-center justify-center">Carregando sua sessão…</div>;
   }
 
-  if (!signed) {
+  if (!signed || user?.first_access) {
     return <Navigate to="/login" />;
   }
 
@@ -77,6 +78,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
+    <MotionConfig reducedMotion="user" transition={{ duration: 0.24, ease: [0.2, 0, 0, 1] }}>
     <AuthProvider>
       <ThemeProvider>
         <Router>
@@ -85,5 +87,6 @@ export default function App() {
         </Router>
       </ThemeProvider>
     </AuthProvider>
+    </MotionConfig>
   );
 }

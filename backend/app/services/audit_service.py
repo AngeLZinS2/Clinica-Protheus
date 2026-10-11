@@ -1,5 +1,6 @@
 import json
-from flask import request
+from flask import request, has_request_context, current_app
+from ipaddress import ip_address as parse_ip
 from app import db
 from app.models.audit_log import AuditLog
 
@@ -9,11 +10,11 @@ class AuditService:
         try:
             # Get IP address from request if available
             ip_address = None
-            if request:
-                if request.headers.getlist("X-Forwarded-For"):
-                    ip_address = request.headers.getlist("X-Forwarded-For")[0]
-                else:
-                    ip_address = request.remote_addr
+            if has_request_context() and request.remote_addr:
+                try:
+                    ip_address = str(parse_ip(request.remote_addr))
+                except ValueError:
+                    pass
 
             # Serialize values to JSON if they are dicts
             if isinstance(old_values, dict):
@@ -36,6 +37,6 @@ class AuditService:
             db.session.commit()
             return log
         except Exception as e:
-            print(f"Error creating audit log: {e}")
+            current_app.logger.error("Audit log persistence failed (%s)", type(e).__name__)
             db.session.rollback()
             return None

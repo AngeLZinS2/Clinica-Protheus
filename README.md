@@ -1,333 +1,124 @@
 # Clínica Protheus
 
-Sistema completo de gerenciamento para clínicas médicas com backend Flask (Python) e frontend React (Vite).
+Sistema full stack de gestão clínica criado para centralizar pacientes, consultas, procedimentos e rotinas administrativas em uma experiência segura e responsiva.
 
-## 📋 Índice
+[![React](https://img.shields.io/badge/React-18-149ECA?logo=react&logoColor=white)](https://react.dev/)
+[![Flask](https://img.shields.io/badge/Flask-2.3-111827?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Início Rápido](#início-rápido)
-- [Backend](#backend-flaskpython)
-- [Frontend](#frontend-reactvite)
-- [Arquitetura](#arquitetura)
-- [API Endpoints](#api-endpoints)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologias](#tecnologias)
+**Aplicação online:** [173.212.251.120:8083](http://173.212.251.120:8083)
 
-## 📁 Estrutura do Projeto
+## Sobre o projeto
 
-```
-Clinica-Protheus/
-├── backend/                    # 🔵 API Flask (Python)
-│   ├── app/
-│   │   ├── models/            # Modelos de dados (SQLAlchemy)
-│   │   ├── schemas/           # Schemas de validação (Marshmallow)
-│   │   ├── controllers/       # Controllers (rotas HTTP)
-│   │   ├── services/          # Lógica de negócio
-│   │   └── utils/             # Utilitários (auth, pagination, validators)
-│   ├── migrations/            # Migrações do banco de dados
-│   ├── instance/              # Banco de dados SQLite
-│   ├── config.py              # Configurações da aplicação
-│   ├── run.py                 # Entry point do servidor
-│   ├── requirements.txt       # Dependências Python
-│   └── README.md              # Documentação do backend
-│
-└── frontend/                   # 🟢 Interface React (Vite)
-    ├── src/
-    │   ├── components/        # Componentes reutilizáveis
-    │   ├── pages/             # Páginas da aplicação
-    │   ├── services/          # Comunicação com API
-    │   └── context/           # Gerenciamento de estado
-    ├── public/                # Arquivos públicos
-    ├── package.json           # Dependências Node
-    ├── vite.config.js         # Configuração Vite
-    └── README.md              # Documentação do frontend
+A Clínica Protheus transforma processos comuns de uma clínica em um fluxo único: cadastro de pacientes, organização da agenda, acompanhamento de procedimentos e visão gerencial. A interface foi desenhada para funcionar bem no computador e no celular, com temas claro e escuro, navegação acessível e uma experiência de login com DNA interativo em 3D.
+
+### Principais recursos
+
+- autenticação JWT e troca obrigatória de senha no primeiro acesso;
+- perfis de administrador, médico, recepcionista e paciente;
+- cadastro e acompanhamento de pacientes;
+- agendamento, atualização e cancelamento de consultas;
+- gestão de procedimentos clínicos;
+- painel com indicadores operacionais;
+- área do paciente e edição de perfil;
+- trilha de auditoria para ações relevantes;
+- paginação, validação de dados e respostas padronizadas da API;
+- interface responsiva, acessível e compatível com movimento reduzido.
+
+## Arquitetura
+
+```text
+Navegador
+   │
+   ▼
+Nginx + React/Vite  ── /api ──▶  Flask + Gunicorn  ──▶  PostgreSQL 16
 ```
 
-## 🚀 Início Rápido
+O ambiente de produção roda com Docker Compose. O Nginx entrega o frontend e encaminha as chamadas da API para o backend, enquanto o PostgreSQL mantém os dados em volume persistente.
+
+## Tecnologias
+
+| Camada | Tecnologias |
+| --- | --- |
+| Frontend | React 18, Vite, Tailwind CSS, Framer Motion, React Three Fiber, Lucide |
+| Backend | Python, Flask, SQLAlchemy, Marshmallow, Flask-JWT-Extended, Gunicorn |
+| Banco de dados | PostgreSQL 16 |
+| Infraestrutura | Docker Compose, Nginx |
+| Qualidade | Pytest, ESLint |
+
+## Como executar com Docker
 
 ### Pré-requisitos
-- **Backend**: Python 3.8+ e pip
-- **Frontend**: Node.js 16+ e npm
 
-### Executar Localmente
-
-**1. Backend:**
-```bash
-cd backend
-pip install -r requirements.txt
-cp .env.example .env
-python run.py
-```
-Servidor: `http://localhost:5000`
-
-**2. Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Aplicação: `http://localhost:5173`
-
-**3. Criar Usuário Admin:**
-```bash
-cd backend
-python create_admin.py
-```
-
-## 🔵 Backend (Flask/Python)
-
-### Estrutura MVC
-
-O backend segue o padrão **MVC (Model-View-Controller)** com camada de serviços:
-
-- **Models** (`app/models/`) - Definição de dados e relacionamentos
-- **Schemas** (`app/schemas/`) - Validação e serialização (View)
-- **Controllers** (`app/controllers/`) - Endpoints HTTP e controle de requisições
-- **Services** (`app/services/`) - Lógica de negócio e regras
+- Docker Engine com Docker Compose
+- Git
 
 ### Instalação
 
 ```bash
-cd backend
-pip install -r requirements.txt
+git clone https://github.com/AngeLZinS2/Clinica-Protheus.git
+cd Clinica-Protheus
+cp .env.example .env
 ```
 
-### Configuração
-
-Crie um arquivo `.env` baseado no `.env.example`:
+Preencha as variáveis do `.env` com valores seguros:
 
 ```env
-DATABASE_URL=sqlite:///clinic.db
-JWT_SECRET_KEY=sua-chave-secreta-aqui
-JWT_ACCESS_TOKEN_EXPIRES=3600
-FLASK_DEBUG=True
-FLASK_ENV=development
+POSTGRES_PASSWORD=uma_senha_forte
+JWT_SECRET_KEY=uma_chave_secreta_longa
+HTTP_PORT=8083
 ```
 
-### Executar
+Depois, inicie os serviços:
 
 ```bash
-# Modo desenvolvimento
-python run.py
-
-# Com debug
-FLASK_DEBUG=True python run.py
+docker compose up -d --build
 ```
 
-### Comandos Úteis
+A aplicação estará disponível em `http://localhost:8083`.
+
+## Desenvolvimento local
+
+### Backend
 
 ```bash
-# Criar usuário administrador
-python create_admin.py
-
-# Executar migrações
-flask db upgrade
-
-# Criar nova migração
-flask db migrate -m "descrição da mudança"
-
-# Reverter migração
-flask db downgrade
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+flask run
 ```
 
-## 🟢 Frontend (React/Vite)
+No Windows PowerShell, ative o ambiente com `.venv\Scripts\Activate.ps1`.
 
-### Instalação
+### Frontend
 
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
 
-### Executar
+## Validação
 
 ```bash
-# Modo desenvolvimento
-npm run dev
+cd backend
+pytest
 
-# Build de produção
-npm run build
-
-# Preview do build
-npm run preview
-
-# Lint
+cd ../frontend
 npm run lint
+npm run build
 ```
 
-### Configuração
+## Autor
 
-O frontend se conecta automaticamente ao backend em `http://localhost:5000`. Para alterar, edite o arquivo de configuração da API.
+Desenvolvido por **Angelo Neri**.
 
-## 🏗️ Arquitetura
+- [GitHub](https://github.com/AngeLZinS2)
+- [LinkedIn](https://www.linkedin.com/in/angelo-neri-3921a72b9/)
+- [Portfólio PlayDB](https://playdb.info/)
 
-### Backend - Padrão MVC
+## Licença
 
-```
-Request → Controller → Service → Model → Database
-                ↓
-            Schema (Validation)
-                ↓
-            Response (JSON)
-```
-
-**Componentes:**
-- **Models**: Estrutura de dados (User, Patient, Appointment, Procedure, AuditLog)
-- **Schemas**: Validação automática com Marshmallow
-- **Controllers**: Endpoints REST organizados por recurso
-- **Services**: Lógica de negócio isolada e reutilizável
-- **Utils**: Autenticação JWT, paginação, validadores
-
-### Frontend - React + Vite
-
-```
-User → Pages → Components → Services → API
-         ↓
-     Context (State)
-```
-
-**Componentes:**
-- **Pages**: Telas principais (Login, Dashboard, Pacientes, etc.)
-- **Components**: Componentes reutilizáveis (Navbar, Cards, Forms)
-- **Services**: Comunicação com backend via Axios
-- **Context**: Gerenciamento de estado global (Auth, Theme)
-
-## 📡 API Endpoints
-
-### Autenticação
-- `POST /auth/login` - Login de usuário/paciente
-- `POST /auth/change-password` - Alterar senha
-
-### Usuários
-- `GET /users` - Listar usuários (admin)
-- `POST /users` - Criar usuário (admin)
-- `GET /users/search?email=` - Buscar por email
-- `PUT /users/:id` - Atualizar usuário
-- `DELETE /users/:id` - Remover usuário (admin)
-- `POST /users/:id/reset-password` - Resetar senha (admin)
-
-### Pacientes
-- `GET /patients` - Listar pacientes
-- `POST /patients` - Criar paciente
-- `GET /patients/:id` - Buscar paciente
-- `PUT /patients/:id` - Atualizar paciente
-- `DELETE /patients/:id` - Remover paciente
-
-### Atendimentos
-- `GET /appointments` - Listar atendimentos
-- `POST /appointments` - Criar atendimento
-- `GET /appointments/:id` - Buscar atendimento
-- `PUT /appointments/:id` - Atualizar atendimento
-- `DELETE /appointments/:id` - Remover atendimento
-
-### Procedimentos
-- `GET /procedures` - Listar procedimentos
-- `POST /procedures` - Criar procedimento (admin)
-- `GET /procedures/:id` - Buscar procedimento
-- `PUT /procedures/:id` - Atualizar procedimento (admin)
-- `DELETE /procedures/:id` - Remover procedimento (admin)
-
-### Dashboard
-- `GET /dashboard/stats` - Estatísticas gerais
-
-### Auditoria
-- `GET /audit` - Logs de auditoria (admin)
-
-## ✨ Funcionalidades
-
-### Autenticação e Autorização
-- ✅ Login de usuários (admin/default)
-- ✅ Login de pacientes
-- ✅ Autenticação JWT
-- ✅ Controle de permissões por tipo de usuário
-- ✅ Primeiro acesso com troca de senha obrigatória
-
-### Gerenciamento de Pacientes
-- ✅ Cadastro completo com endereço
-- ✅ Cadastro de responsável (para menores de idade)
-- ✅ Validação de CPF e email únicos
-- ✅ Histórico de atendimentos
-
-### Agendamento de Consultas
-- ✅ Criação de atendimentos
-- ✅ Associação com múltiplos procedimentos
-- ✅ Cálculo automático de valor total
-- ✅ Filtros por data
-- ✅ Tipos: Plano de saúde ou Particular
-
-### Procedimentos Médicos
-- ✅ Cadastro de procedimentos
-- ✅ Valores diferenciados (plano/particular)
-- ✅ Descrição detalhada
-
-### Dashboard
-- ✅ Total de pacientes
-- ✅ Atendimentos do dia
-- ✅ Total de procedimentos
-- ✅ Receita mensal
-
-### Auditoria
-- ✅ Log de todas as ações
-- ✅ Rastreamento de usuário e IP
-- ✅ Histórico de alterações
-- ✅ Filtros avançados
-
-## 🛠️ Tecnologias
-
-### Backend
-| Tecnologia | Versão | Descrição |
-|------------|--------|-----------|
-| Flask | 2.3.3 | Framework web |
-| SQLAlchemy | 3.0.5 | ORM para banco de dados |
-| Marshmallow | 3.20.1 | Serialização e validação |
-| Flask-JWT-Extended | 4.5.3 | Autenticação JWT |
-| Flask-CORS | 4.0.0 | CORS para API |
-| SQLite | - | Banco de dados |
-
-### Frontend
-| Tecnologia | Descrição |
-|------------|-----------|
-| React | 18.x | Biblioteca UI |
-| Vite | 5.x | Build tool |
-| TailwindCSS | 3.x | Framework CSS |
-| React Router | 6.x | Roteamento |
-| Axios | - | Cliente HTTP |
-
-## 📝 Desenvolvimento
-
-### Padrões de Código
-
-**Backend:**
-- PEP 8 para Python
-- Docstrings em funções públicas
-- Type hints quando aplicável
-
-**Frontend:**
-- ESLint configurado
-- Componentes funcionais com Hooks
-- PropTypes para validação
-
-### Estrutura de Commits
-
-```
-tipo(escopo): descrição curta
-
-Descrição detalhada (opcional)
-```
-
-**Tipos:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'feat: Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Proprietary - Angelo Neri © 2025
-
----
-
+Projeto desenvolvido para fins de portfólio e demonstração técnica.

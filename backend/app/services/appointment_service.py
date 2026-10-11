@@ -3,6 +3,8 @@ from decimal import Decimal
 from app import db
 from app.models.appointment import Appointment, AppointmentProcedure
 from app.models.patient import Patient
+from app.models.user import User
+from app.schemas.appointment_schema import AppointmentSchema
 from app.models.procedure import Procedure
 from app.services.audit_service import AuditService
 
@@ -34,10 +36,12 @@ class AppointmentService:
         else:
             total_value = sum(proc.valor_particular for proc in procedures)
         
+        if total_value > Decimal('99999999.99'):
+            return None, 'Valor total excede o limite permitido'
         try:
             # Parse date
-            data_hora = datetime.fromisoformat(data['data_hora'])
-        except ValueError:
+            data_hora = data['data_hora'] if isinstance(data['data_hora'], datetime) else datetime.fromisoformat(data['data_hora'])
+        except (ValueError, TypeError):
             return None, "Formato de data/hora inválido (use ISO format)"
         
         appointment = Appointment(
@@ -65,7 +69,7 @@ class AppointmentService:
                 action='CREATE',
                 table_name='appointments',
                 record_id=appointment.id,
-                new_values=appointment.to_dict(),
+                new_values=AppointmentSchema().dump(appointment),
                 details=f"Atendimento criado para paciente {patient.nome}"
             )
             
@@ -82,16 +86,20 @@ class AppointmentService:
             return None, "Atendimento não encontrado"
         
         # Check permissions
-        if appointment.user_id != current_user.id and current_user.tipo != 'admin':
+        if not isinstance(current_user, User) or (appointment.user_id != current_user.id and current_user.tipo != 'admin'):
             return None, "Sem permissão para alterar este atendimento"
         
-        old_values = appointment.to_dict()
-        
+        old_values = AppointmentSchema().dump(appointment)
+        if 'patient_id' in data:
+            if not db.session.get(Patient, data['patient_id']):
+                return None, 'Paciente não encontrado'
+            appointment.patient_id = data['patient_id']
+
         # Update data_hora
         if 'data_hora' in data:
             try:
-                appointment.data_hora = datetime.fromisoformat(data['data_hora'])
-            except ValueError:
+                appointment.data_hora = data['data_hora'] if isinstance(data['data_hora'], datetime) else datetime.fromisoformat(data['data_hora'])
+            except (ValueError, TypeError):
                 return None, "Formato de data/hora inválido"
         
         # Update tipo and carteira
@@ -123,6 +131,10 @@ class AppointmentService:
             else:
                 appointment.valor_total = sum(proc.valor_particular for proc in procedures)
         
+        appointment.valor_total = sum((proc.valor_plano if appointment.tipo == 'plano' else proc.valor_particular for proc in appointment.procedures), Decimal('0'))
+        if appointment.valor_total > Decimal('99999999.99'):
+            db.session.rollback()
+            return None, 'Valor total excede o limite permitido'
         try:
             db.session.commit()
             
@@ -133,7 +145,7 @@ class AppointmentService:
                 table_name='appointments',
                 record_id=appointment.id,
                 old_values=old_values,
-                new_values=appointment.to_dict(),
+                new_values=AppointmentSchema().dump(appointment),
                 details=f"Atendimento atualizado"
             )
             
@@ -150,10 +162,10 @@ class AppointmentService:
             return False, "Atendimento não encontrado"
         
         # Check permissions
-        if appointment.user_id != current_user.id and current_user.tipo != 'admin':
+        if not isinstance(current_user, User) or (appointment.user_id != current_user.id and current_user.tipo != 'admin'):
             return False, "Sem permissão para remover este atendimento"
         
-        old_values = appointment.to_dict()
+        old_values = AppointmentSchema().dump(appointment)
         
         try:
             db.session.delete(appointment)

@@ -1,0 +1,45 @@
+name: clinica-protheus
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clinica_protheus
+      POSTGRES_USER: clinica
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD no arquivo .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinica -d clinica_protheus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  api:
+    build: ./backend
+    image: clinica-protheus-api:local
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://clinica:${POSTGRES_PASSWORD}@postgres:5432/clinica_protheus
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Configure JWT_SECRET_KEY no arquivo .env}
+      FLASK_DEBUG: "False"
+      FLASK_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  frontend:
+    build: ./frontend
+    image: clinica-protheus-frontend:local
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8083}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  postgres_data:

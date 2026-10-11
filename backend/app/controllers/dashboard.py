@@ -1,8 +1,10 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, current_app
 from flask_jwt_extended import jwt_required
 from datetime import date, datetime
 from sqlalchemy import extract, func
 from app import db
+from app.models.user import User
+from app.utils.auth import get_current_user
 from app.models.patient import Patient
 from app.models.appointment import Appointment
 from app.models.procedure import Procedure
@@ -12,6 +14,8 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @dashboard_bp.route('/stats', methods=['GET'])
 @jwt_required()
 def get_dashboard_stats():
+    if not isinstance(get_current_user(), User):
+        return jsonify({'error': 'Acesso negado'}), 403
     """Get dashboard statistics"""
     try:
         today = date.today()
@@ -44,5 +48,5 @@ def get_dashboard_stats():
         }), 200
 
     except Exception as e:
-        print(f"Error getting dashboard stats: {e}")
+        current_app.logger.error("Dashboard query failed (%s)", type(e).__name__)
         return jsonify({'error': 'Erro ao carregar estatísticas'}), 500

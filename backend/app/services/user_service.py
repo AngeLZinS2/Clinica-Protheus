@@ -1,6 +1,6 @@
 from app import db
 from app.models.user import User
-from app.utils.auth import hash_password, check_password
+from app.utils.auth import hash_password, check_password, valid_password
 from app.utils.validators import validate_email
 
 class UserService:
@@ -15,6 +15,9 @@ class UserService:
         if User.query.filter_by(email=data['email']).first():
             return None, "Email já está em uso"
         
+        if not valid_password(data.get('senha')):
+            return None, "Senha deve ter pelo menos 6 caracteres e no máximo 72 bytes"
+
         # Hash password
         hashed_password = hash_password(data['senha'])
         
@@ -41,9 +44,18 @@ class UserService:
             return None, "Usuário não encontrado"
         
         # Check permissions
+        if not isinstance(current_user, User):
+            return None, "Sem permissão para alterar este usuário"
         if user.id != current_user.id and current_user.tipo != 'admin':
             return None, "Sem permissão para alterar este usuário"
         
+        # Validate before mutating any fields.
+        if 'senha' in data:
+            if not valid_password(data['senha']):
+                return None, "Senha deve ter pelo menos 6 caracteres e no máximo 72 bytes"
+            if not check_password(data.get('senha_atual'), user.senha):
+                return None, "Senha atual incorreta"
+
         # Check email uniqueness
         if 'email' in data and data['email'] != user.email:
             if not validate_email(data['email']):
@@ -55,12 +67,9 @@ class UserService:
         if 'nome' in data:
             user.nome = data['nome']
         
-        # Only allow password change with old password verification
-        if 'senha' in data and 'senha_atual' in data:
-            if not check_password(data['senha_atual'], user.senha):
-                return None, "Senha atual incorreta"
+        if 'senha' in data:
             user.senha = hash_password(data['senha'])
-        
+
         try:
             db.session.commit()
             return user, None
@@ -71,7 +80,7 @@ class UserService:
     @staticmethod
     def delete_user(user_id, current_user):
         """Delete user (admin only, if no appointments)"""
-        if current_user.tipo != 'admin':
+        if not isinstance(current_user, User) or current_user.tipo != 'admin':
             return False, "Apenas administradores podem remover usuários"
         
         user = User.query.get(user_id)
@@ -92,13 +101,15 @@ class UserService:
     @staticmethod
     def reset_password(user_id, new_password, current_user):
         """Reset user password (admin only)"""
-        if current_user.tipo != 'admin':
+        if not isinstance(current_user, User) or current_user.tipo != 'admin':
             return None, "Apenas administradores podem resetar senhas"
         
         user = User.query.get(user_id)
         if not user:
             return None, "Usuário não encontrado"
         
+        if not valid_password(new_password):
+            return None, "Senha deve ter pelo menos 6 caracteres e no máximo 72 bytes"
         user.senha = hash_password(new_password)
         
         try:

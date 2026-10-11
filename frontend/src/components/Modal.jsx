@@ -1,45 +1,38 @@
 import { X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 export default function Modal({ isOpen, onClose, title, children }) {
-    useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-        if (isOpen) window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [isOpen, onClose]);
+    const dialogRef = useRef(null);
+    const titleId = useId();
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        if (isOpen && !dialog.open) dialog.showModal();
+        if (!isOpen && dialog.open) dialog.close();
+        return () => { if (dialog.open) dialog.close(); };
+    }, [isOpen]);
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                    <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
+        <dialog
+            ref={dialogRef}
+            aria-labelledby={titleId}
+            onCancel={(event) => { event.preventDefault(); onClose(); }}
+            onClick={(event) => {
+                if (event.target !== event.currentTarget) return;
+                const bounds = event.currentTarget.getBoundingClientRect();
+                if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+            }}
+            className="m-auto w-[calc(100%_-_2rem)] max-w-lg max-h-[calc(100dvh_-_2rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/50 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        >
+            {isOpen && <div className="p-5 sm:p-6">
+                <div className="flex items-start justify-between gap-4">
+                    <h2 className="text-lg font-semibold" id={titleId}>{title}</h2>
+                    <button type="button" onClick={onClose} aria-label="Fechar janela" className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">
+                        <X className="h-5 w-5" aria-hidden="true" />
+                    </button>
                 </div>
-
-                <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div className="flex justify-between items-start">
-                            <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
-                                {title}
-                            </h3>
-                            <button
-                                onClick={onClose}
-                                className="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none"
-                            >
-                                <X className="h-6 w-6" />
-                            </button>
-                        </div>
-                        <div className="mt-4">
-                            {children}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <div className="mt-4">{children}</div>
+            </div>}
+        </dialog>
     );
 }

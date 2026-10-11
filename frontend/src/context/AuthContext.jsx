@@ -13,8 +13,11 @@ export function AuthProvider({ children }) {
             const storedUser = localStorage.getItem('user');
             const storedToken = localStorage.getItem('token');
 
-            if (storedUser && storedToken) {
-                setUser(JSON.parse(storedUser));
+            try {
+                if (storedUser && storedToken) setUser(JSON.parse(storedUser));
+            } catch {
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
             }
             setLoading(false);
         };
@@ -22,7 +25,15 @@ export function AuthProvider({ children }) {
         loadStorageData();
     }, []);
 
-    const login = async (email, senha) => {
+    const updateUser = (changes) => {
+        setUser(current => {
+            const updated = { ...current, ...changes };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+        });
+    };
+
+    const login = async (email, senha, { silent = false } = {}) => {
         try {
             const response = await api.post('/auth/login', { email, senha });
             const { user, access_token, role, first_access } = response.data;
@@ -40,9 +51,8 @@ export function AuthProvider({ children }) {
                 toast.success('Login realizado com sucesso!');
             }
             return true;
-        } catch (error) {
-            console.error(error);
-            toast.error('Erro ao fazer login. Verifique suas credenciais.');
+        } catch {
+            if (!silent) toast.error('Erro ao fazer login. Verifique suas credenciais.');
             return false;
         }
     };
@@ -55,7 +65,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ signed: !!user, user, login, logout, loading }}>
+        <AuthContext.Provider value={{ signed: !!user, user, updateUser, login, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );
