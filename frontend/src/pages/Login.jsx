@@ -101,7 +101,7 @@ export default function Login() {
                     <div className="mt-8 border-t border-slate-200 pt-6 text-sm leading-relaxed text-slate-500">Precisa de acesso ou esqueceu sua senha?<br /><span className="text-slate-700">Entre em contato com a administração da clínica.</span></div>
                 </motion.div>
                 </div>
-                <Footer className="w-full" />
+                <Footer highContrast className="w-full" />
             </section>
         </main>
     );
